@@ -1,11 +1,14 @@
 import Dict
+import String
 import Html exposing (..)
 import Html.Events exposing (..)
 import Html.Attributes exposing (..)
  -- Model
 type alias PlayerInfo = Dict.Dict String (Maybe String)
+type alias PlayerAttrs = Dict.Dict String Int
 type alias Model = {
   playerInfo : PlayerInfo
+  , playerAttrs : PlayerAttrs
 }
 
 emptyPlayerInfo : PlayerInfo
@@ -18,10 +21,18 @@ emptyPlayerInfo =
     ,("Anima", Nothing)
     ,("Ability", Nothing)
     ]
+
+emptyPlayerAttrs : PlayerAttrs
+emptyPlayerAttrs = List.map (\str -> (str, 1)) abilities2 |> Dict.fromList
 -- Update
 
 type Msg
    = EditPlayerInfo String String
+   | EditPlayerAttrs Operation String
+
+type Operation
+   = Incr
+   | Decr
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -31,20 +42,51 @@ update msg model =  case msg of
       Dict.insert attr (if String.length val > 0 then (Just val) else Nothing) model.playerInfo
     in
       {model | playerInfo = newPlayerInfo} ! []
+  EditPlayerAttrs operation attr ->
+    {model | playerAttrs = extend operation attr model.playerAttrs} ! []
     -- (!) : model -> List (Cmd msg) -> (model, Cmd msg)
 
+extend : Operation -> String -> PlayerAttrs -> PlayerAttrs
+extend op attr playerAttrs =
+  let oldAttr =
+    Dict.get attr playerAttrs
+    |> Maybe.withDefault 0
+  in
+    case op of
+      Incr ->
+        if oldAttr == 5 then
+          playerAttrs
+        else
+          Dict.insert attr (oldAttr + 1) playerAttrs
+      Decr ->
+        if oldAttr == 1 then
+          playerAttrs
+        else
+          Dict.insert attr (oldAttr - 1) playerAttrs
 -- View
 view : Model -> Html Msg
 view model =
   div []
     -- input updates state as you type
+    [ playerInfoView model
+    , ability2View model ]
+
+ability2View : Model -> Html Msg
+ability2View model =
+  div[]
+    (Dict.toList model.playerAttrs
+      |> List.map ability2Selection)
+
+playerInfoView : Model -> Html Msg
+playerInfoView model =
+  div []
+    -- input updates state as you type
     [ input [ placeholder "Name", onInput (EditPlayerInfo "Name")] []
     , input [ placeholder "Player", onInput (EditPlayerInfo "Player")] []
     , input [ placeholder "Concept", onInput (EditPlayerInfo "Concept")] []
-    , br [] []
     , input [ placeholder "Anima", onInput (EditPlayerInfo "Anima")] []
     , casteSelection
-    , abilitySelection
+    , ability1Selection
     ]
 
 casteSelection : Html Msg
@@ -54,11 +96,24 @@ casteSelection =
      [onInput (EditPlayerInfo "Caste")]
      (List.map simpleSelect castes)
 
-abilitySelection : Html Msg
-abilitySelection =
+ability1Selection : Html Msg
+ability1Selection =
   select
     [onInput (EditPlayerInfo "Ability")]
-    (List.map simpleSelect abilities)
+    (List.map simpleSelect abilities1)
+
+ability2Selection : (String, Int) -> Html Msg
+ability2Selection (attr, val) =
+  div []
+    [ text (attr ++ " ")
+    , text (toString val)
+    , button
+        [onClick (EditPlayerAttrs Incr attr)]
+        [text "+"]
+    , button
+        [onClick (EditPlayerAttrs Decr attr)]
+        [text "-"]
+    ]
 
 simpleSelect : String -> Html msg
 simpleSelect str =
@@ -72,8 +127,8 @@ castes =
   ,"Night"
   ,"Eclipse"]
 
-abilities : List String
-abilities =
+abilities1 : List String
+abilities1 =
   ["Archery"
   ,"Athletics"
   ,"Brawl"
@@ -101,9 +156,23 @@ abilities =
   ,"War"
   ]
 
+abilities2 : List String
+abilities2 =
+  ["Strength"
+  ,"Dexerity"
+  ,"Stamina"
+  ,"Charisma"
+  ,"Manipulation"
+  ,"Appearance"
+  ,"Perception"
+  ,"Intelligence"
+  ,"Wit"]
  -- Init
+
+
+
 init : (Model, Cmd Msg)
-init = {playerInfo = emptyPlayerInfo} ! []
+init = {playerInfo = emptyPlayerInfo, playerAttrs = emptyPlayerAttrs} ! []
 
 
  -- Entry Point
