@@ -1,36 +1,36 @@
+import Dict
 import Html exposing (..)
 import Html.Events exposing (..)
 import Html.Attributes exposing (..)
  -- Model
-
+type alias PlayerInfo = Dict.Dict String (Maybe String)
 type alias Model = {
-  name : String
-  , player : String
-  , caste : String
-  , concept : String
-  , anima : String
-  , ability : String
+  playerInfo : PlayerInfo
 }
 
+emptyPlayerInfo : PlayerInfo
+emptyPlayerInfo =
+  Dict.fromList
+    [("Name", Nothing)
+    ,("Player", Nothing)
+    ,("Caste", Nothing)
+    ,("Concept", Nothing)
+    ,("Anima", Nothing)
+    ,("Ability", Nothing)
+    ]
 -- Update
 
 type Msg
-   = EditName String
-   | EditPlayer String
-   | EditCaste String
-   | EditConcept String
-   | EditAnima String
-   | EditAbility String
+   = EditPlayerInfo String String
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =  case msg of
-  EditName str -> {model | name = str } ! []
-  EditPlayer str -> {model | player = str} ! []
-  EditCaste str -> {model | caste = str} ! []
-  EditConcept str -> {model | concept = str} ! []
-  EditAnima str -> {model | anima = str} ! []
-  EditAbility str -> {model | ability = str} ! []
+  EditPlayerInfo attr val ->
+    let newPlayerInfo =
+      Dict.insert attr (if String.length val > 0 then (Just val) else Nothing) model.playerInfo
+    in
+      {model | playerInfo = newPlayerInfo} ! []
     -- (!) : model -> List (Cmd msg) -> (model, Cmd msg)
 
 -- View
@@ -38,11 +38,11 @@ view : Model -> Html Msg
 view model =
   div []
     -- input updates state as you type
-    [ input [ placeholder "Name", onInput EditName ] []
-    , input [ placeholder "Player", onInput EditPlayer ] []
-    , input [ placeholder "Concept", onInput EditConcept ] []
+    [ input [ placeholder "Name", onInput (EditPlayerInfo "Name")] []
+    , input [ placeholder "Player", onInput (EditPlayerInfo "Player")] []
+    , input [ placeholder "Concept", onInput (EditPlayerInfo "Concept")] []
     , br [] []
-    , input [ placeholder "Anima", onInput EditAnima ] []
+    , input [ placeholder "Anima", onInput (EditPlayerInfo "Anima")] []
     , casteSelection
     , abilitySelection
     ]
@@ -51,13 +51,13 @@ casteSelection : Html Msg
 casteSelection =
   -- Drop down menu
   select
-     [onInput EditCaste]
+     [onInput (EditPlayerInfo "Caste")]
      (List.map simpleSelect castes)
 
 abilitySelection : Html Msg
 abilitySelection =
   select
-    [onInput EditAbility]
+    [onInput (EditPlayerInfo "Ability")]
     (List.map simpleSelect abilities)
 
 simpleSelect : String -> Html msg
@@ -103,7 +103,7 @@ abilities =
 
  -- Init
 init : (Model, Cmd Msg)
-init = (Model "" "" "Dawn" "" "" "Archery") ! []
+init = {playerInfo = emptyPlayerInfo} ! []
 
 
  -- Entry Point
