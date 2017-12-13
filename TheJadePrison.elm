@@ -1,6 +1,8 @@
 import Dict
 import String
 import Html exposing (..)
+import Svg
+import Svg.Attributes as SvgAttrs
 import Html.Events exposing (..)
 import Html.Attributes exposing (..)
  -- Model
@@ -28,11 +30,8 @@ emptyPlayerAttrs = List.map (\str -> (str, 1)) abilities2 |> Dict.fromList
 
 type Msg
    = EditPlayerInfo String String
-   | EditPlayerAttrs Operation String
+   | EditPlayerAttrs String Int
 
-type Operation
-   = Incr
-   | Decr
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -42,34 +41,46 @@ update msg model =  case msg of
       Dict.insert attr (if String.length val > 0 then (Just val) else Nothing) model.playerInfo
     in
       {model | playerInfo = newPlayerInfo} ! []
-  EditPlayerAttrs operation attr ->
-    {model | playerAttrs = extend operation attr model.playerAttrs} ! []
+  EditPlayerAttrs attr val ->
+    {model | playerAttrs = extend attr val model.playerAttrs} ! []
     -- (!) : model -> List (Cmd msg) -> (model, Cmd msg)
 
-extend : Operation -> String -> PlayerAttrs -> PlayerAttrs
-extend op attr playerAttrs =
-  let oldAttr =
-    Dict.get attr playerAttrs
-    |> Maybe.withDefault 0
-  in
-    case op of
-      Incr ->
-        if oldAttr == 5 then
-          playerAttrs
-        else
-          Dict.insert attr (oldAttr + 1) playerAttrs
-      Decr ->
-        if oldAttr == 1 then
-          playerAttrs
-        else
-          Dict.insert attr (oldAttr - 1) playerAttrs
+extend : String -> Int -> PlayerAttrs -> PlayerAttrs
+extend attr val playerAttrs =
+  Dict.insert attr val playerAttrs
+
 -- View
 view : Model -> Html Msg
 view model =
   div []
     -- input updates state as you type
     [ playerInfoView model
-    , ability2View model ]
+    , ability2View model
+    ]
+
+
+pointCircle : String -> Int -> Bool -> Html Msg
+pointCircle attr val filled =
+  Svg.svg
+      [ SvgAttrs.width "20"
+      , SvgAttrs.height "20"
+      , onClick (EditPlayerAttrs attr val)
+      ]
+      [ Svg.circle
+          [ SvgAttrs.cx "10"
+          , SvgAttrs.cy "10"
+          , SvgAttrs.r "8"
+          , SvgAttrs.stroke "black"
+          , SvgAttrs.strokeWidth "2"
+          , if filled then
+                SvgAttrs.fill "black"
+            else
+                SvgAttrs.fill "white"
+          ]
+          []
+      ]
+
+
 
 ability2View : Model -> Html Msg
 ability2View model =
@@ -104,16 +115,21 @@ ability1Selection =
 
 ability2Selection : (String, Int) -> Html Msg
 ability2Selection (attr, val) =
-  div []
-    [ text (attr ++ " ")
-    , text (toString val)
-    , button
-        [onClick (EditPlayerAttrs Incr attr)]
-        [text "+"]
-    , button
-        [onClick (EditPlayerAttrs Decr attr)]
-        [text "-"]
-    ]
+  let
+    bools =
+      List.map2 (\ref val -> ref >= val)
+        (List.repeat 5 val)
+        (List.range 1 5)
+  in
+    div []
+      [ text (attr ++ " ")
+      , div
+          []
+          (List.map2 (pointCircle attr)
+            (List.range 1 5)
+            bools
+          )
+      ]
 
 simpleSelect : String -> Html msg
 simpleSelect str =
