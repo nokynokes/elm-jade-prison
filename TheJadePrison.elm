@@ -81,6 +81,8 @@ pointCircle attr val filled =
       ]
 
 
+info : String -> List (Attribute Msg)
+info str = [placeholder str, onInput (EditPlayerInfo str)]
 
 ability2View : Model -> Html Msg
 ability2View model =
@@ -92,10 +94,10 @@ playerInfoView : Model -> Html Msg
 playerInfoView model =
   div []
     -- input updates state as you type
-    [ input [ placeholder "Name", onInput (EditPlayerInfo "Name")] []
-    , input [ placeholder "Player", onInput (EditPlayerInfo "Player")] []
-    , input [ placeholder "Concept", onInput (EditPlayerInfo "Concept")] []
-    , input [ placeholder "Anima", onInput (EditPlayerInfo "Anima")] []
+    [ input (info "Name") []
+    , input (info "Player") []
+    , input (info "Concept") []
+    , input (info "Anima") []
     , casteSelection
     , ability1Selection
     ]
