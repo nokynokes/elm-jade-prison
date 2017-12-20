@@ -25,7 +25,7 @@ emptyPlayerInfo =
     ]
 
 emptyPlayerAttrs : PlayerAttrs
-emptyPlayerAttrs = List.map (\str -> (str, 1)) abilities2 |> Dict.fromList
+emptyPlayerAttrs = List.map (\str -> (str, 1)) exAttrs |> Dict.fromList
 -- Update
 
 type Msg
@@ -86,9 +86,42 @@ info str = [placeholder str, onInput (EditPlayerInfo str)]
 
 ability2View : Model -> Html Msg
 ability2View model =
+  let attrs =
+    model.playerAttrs
+  in
   div[]
-    (Dict.toList model.playerAttrs
-      |> List.map ability2Selection)
+    [ physicalAttrs attrs
+    , socialAttrs attrs
+    , mentalAttrs attrs
+    ]
+
+physicalAttrs : PlayerAttrs -> Html Msg
+physicalAttrs attrs =
+  div []
+      [ h3 [] [ text "Physical"]
+      , ability2Selection attrs "Strength"
+      , ability2Selection attrs "Dexerity"
+      , ability2Selection attrs "Stamina"
+      ]
+
+socialAttrs : PlayerAttrs -> Html Msg
+socialAttrs attrs =
+  div []
+      [ h3 [] [ text "Social"]
+      , ability2Selection attrs "Charisma"
+      , ability2Selection attrs "Manipulation"
+      , ability2Selection attrs "Appearance"
+      ]
+
+mentalAttrs : PlayerAttrs -> Html Msg
+mentalAttrs attrs =
+  div []
+      [ h3 [] [ text "Mental"]
+      , ability2Selection attrs "Perception"
+      , ability2Selection attrs "Intelligence"
+      , ability2Selection attrs "Wits"
+      ]
+
 
 playerInfoView : Model -> Html Msg
 playerInfoView model =
@@ -115,11 +148,14 @@ ability1Selection =
     [onInput (EditPlayerInfo "Ability")]
     (List.map simpleSelect abilities1)
 
-ability2Selection : (String, Int) -> Html Msg
-ability2Selection (attr, val) =
+ability2Selection : PlayerAttrs -> String -> Html Msg
+ability2Selection attrs attr =
   let
+    val =
+      Dict.get attr attrs
+      |> Maybe.withDefault 1
     bools =
-      List.map2 (\ref val -> ref >= val)
+      List.map2 (\r v -> r >= v)
         (List.repeat 5 val)
         (List.range 1 5)
   in
@@ -132,6 +168,9 @@ ability2Selection (attr, val) =
             bools
           )
       ]
+
+-- physicalAttrs : Model -> Html Msg
+-- physicalAttrs model =
 
 simpleSelect : String -> Html msg
 simpleSelect str =
@@ -174,8 +213,8 @@ abilities1 =
   ,"War"
   ]
 
-abilities2 : List String
-abilities2 =
+exAttrs : List String
+exAttrs =
   ["Strength"
   ,"Dexerity"
   ,"Stamina"
@@ -184,7 +223,9 @@ abilities2 =
   ,"Appearance"
   ,"Perception"
   ,"Intelligence"
-  ,"Wit"]
+  ,"Wit"
+  ]
+
  -- Init
 
 
