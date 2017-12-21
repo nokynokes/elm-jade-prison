@@ -8,9 +8,11 @@ import Html.Attributes exposing (..)
  -- Model
 type alias PlayerInfo = Dict.Dict String (Maybe String)
 type alias PlayerAttrs = Dict.Dict String Int
+type alias PlayerAbils = Dict.Dict String (Bool, Int)
 type alias Model = {
   playerInfo : PlayerInfo
   , playerAttrs : PlayerAttrs
+  , playerAbils : PlayerAbils
 }
 
 emptyPlayerInfo : PlayerInfo
@@ -26,11 +28,15 @@ emptyPlayerInfo =
 
 emptyPlayerAttrs : PlayerAttrs
 emptyPlayerAttrs = List.map (\str -> (str, 1)) exAttrs |> Dict.fromList
+
+emptyPlayerAbils : PlayerAbils
+emptyPlayerAbils = List.map (\str -> (str, (False, 0))) exAbils |> Dict.fromList
 -- Update
 
 type Msg
    = EditPlayerInfo String String
    | EditPlayerAttrs String Int
+   | EditPlayerAbils String Bool Int
 
 
 
@@ -43,7 +49,8 @@ update msg model =  case msg of
       {model | playerInfo = newPlayerInfo} ! []
   EditPlayerAttrs attr val ->
     {model | playerAttrs = extend attr val model.playerAttrs} ! []
-    -- (!) : model -> List (Cmd msg) -> (model, Cmd msg)
+  EditPlayerAbils abil bool int ->
+    {model | playerAbils = Dict.insert abil (bool,int) model.playerAbils} ! []
 
 extend : String -> Int -> PlayerAttrs -> PlayerAttrs
 extend attr val playerAttrs =
@@ -55,7 +62,8 @@ view model =
   div []
     -- input updates state as you type
     [ playerInfoView model
-    , ability2View model
+    , attrsView model
+    , allAbilitiesView model.playerAbils
     ]
 
 
@@ -80,46 +88,77 @@ pointCircle attr val filled =
           []
       ]
 
+pointCircleAbils : String -> Int -> Bool -> Html Msg
+pointCircleAbils abil val fill =
+  Svg.svg
+      [ SvgAttrs.width "20"
+      , SvgAttrs.height "20"
+      , onClick (EditPlayerAbils abil False val)
+      ]
+      [ Svg.circle
+          [ SvgAttrs.cx "10"
+          , SvgAttrs.cy "10"
+          , SvgAttrs.r "8"
+          , SvgAttrs.stroke "black"
+          , SvgAttrs.strokeWidth "2"
+          , if fill then
+                SvgAttrs.fill "black"
+            else
+                SvgAttrs.fill "white"
+          ]
+          []
+      ]
+
 
 info : String -> List (Attribute Msg)
 info str = [placeholder str, onInput (EditPlayerInfo str)]
 
-ability2View : Model -> Html Msg
-ability2View model =
+attrsView : Model -> Html Msg
+attrsView model =
   let attrs =
     model.playerAttrs
   in
   div[]
-    [ physicalAttrs attrs
+    [ h2 [] [ text "Attributes"]
+    , physicalAttrs attrs
     , socialAttrs attrs
     , mentalAttrs attrs
     ]
+
+allAbilitiesView : PlayerAbils -> Html Msg
+allAbilitiesView abils =
+  div []
+      ([ h2 [] [ text "Abilities" ] ]
+      ++ List.map (abilSelection abils) exAbils
+      )
+
+
 
 physicalAttrs : PlayerAttrs -> Html Msg
 physicalAttrs attrs =
   div []
       [ h3 [] [ text "Physical"]
-      , ability2Selection attrs "Strength"
-      , ability2Selection attrs "Dexerity"
-      , ability2Selection attrs "Stamina"
+      , attrSelection attrs "Strength"
+      , attrSelection attrs "Dexerity"
+      , attrSelection attrs "Stamina"
       ]
 
 socialAttrs : PlayerAttrs -> Html Msg
 socialAttrs attrs =
   div []
       [ h3 [] [ text "Social"]
-      , ability2Selection attrs "Charisma"
-      , ability2Selection attrs "Manipulation"
-      , ability2Selection attrs "Appearance"
+      , attrSelection attrs "Charisma"
+      , attrSelection attrs "Manipulation"
+      , attrSelection attrs "Appearance"
       ]
 
 mentalAttrs : PlayerAttrs -> Html Msg
 mentalAttrs attrs =
   div []
       [ h3 [] [ text "Mental"]
-      , ability2Selection attrs "Perception"
-      , ability2Selection attrs "Intelligence"
-      , ability2Selection attrs "Wits"
+      , attrSelection attrs "Perception"
+      , attrSelection attrs "Intelligence"
+      , attrSelection attrs "Wits"
       ]
 
 
@@ -148,8 +187,8 @@ ability1Selection =
     [onInput (EditPlayerInfo "Ability")]
     (List.map simpleSelect abilities1)
 
-ability2Selection : PlayerAttrs -> String -> Html Msg
-ability2Selection attrs attr =
+attrSelection : PlayerAttrs -> String -> Html Msg
+attrSelection attrs attr =
   let
     val =
       Dict.get attr attrs
@@ -169,8 +208,28 @@ ability2Selection attrs attr =
           )
       ]
 
--- physicalAttrs : Model -> Html Msg
--- physicalAttrs model =
+
+abilSelection : PlayerAbils -> String -> Html Msg
+abilSelection abils abil =
+  let
+    (favoured, val) =
+      Dict.get abil abils
+          |> Maybe.withDefault (False, 0)
+    bools =
+      List.map2 (\r v -> r >= v)
+        (List.repeat 5 val)
+        (List.range 1 5)
+  in
+    div []
+      [ text abil
+      , div
+          []
+          (List.map2 (pointCircleAbils abil)
+            (List.range 1 5)
+            bools
+          )
+      ]
+
 
 simpleSelect : String -> Html msg
 simpleSelect str =
@@ -223,7 +282,37 @@ exAttrs =
   ,"Appearance"
   ,"Perception"
   ,"Intelligence"
-  ,"Wit"
+  ,"Wits"
+  ]
+
+exAbils : List String
+exAbils =
+  ["Archery"
+  , "Athletics"
+  , "Awareness"
+  , "Brawl"
+  , "Bureaucracy"
+  , "Craft"
+  , "Dodge"
+  , "Integrity"
+  , "Investigation"
+  , "Larceny"
+  , "Linguistics"
+  , "Lore"
+  , "Martial Arts"
+  , "Medicine"
+  , "Melee"
+  , "Occult"
+  , "Performance"
+  , "Presence"
+  , "Resistance"
+  , "Ride"
+  , "Sail"
+  , "Socialize"
+  , "Stealth"
+  , "Survival"
+  , "Thrown"
+  , "War"
   ]
 
  -- Init
@@ -231,7 +320,9 @@ exAttrs =
 
 
 init : (Model, Cmd Msg)
-init = {playerInfo = emptyPlayerInfo, playerAttrs = emptyPlayerAttrs} ! []
+init = { playerInfo = emptyPlayerInfo
+        , playerAttrs = emptyPlayerAttrs
+        , playerAbils = emptyPlayerAbils } ! []
 
 
  -- Entry Point
