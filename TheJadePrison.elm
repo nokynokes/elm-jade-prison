@@ -44,17 +44,25 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =  case msg of
   EditPlayerInfo attr val ->
     let newPlayerInfo =
-      Dict.insert attr (if String.length val > 0 then (Just val) else Nothing) model.playerInfo
+
     in
       {model | playerInfo = newPlayerInfo} ! []
   EditPlayerAttrs attr val ->
-    {model | playerAttrs = extend attr val model.playerAttrs} ! []
+    {model | playerAttrs = extendAttrs attr val model.playerAttrs} ! []
   EditPlayerAbils abil bool int ->
-    {model | playerAbils = Dict.insert abil (bool,int) model.playerAbils} ! []
+    {model | playerAbils = extendAbils abil (bool,int) model.playerAbils} ! []
 
-extend : String -> Int -> PlayerAttrs -> PlayerAttrs
-extend attr val playerAttrs =
+extendAttrs : String -> Int -> PlayerAttrs -> PlayerAttrs
+extendAttrs attr val playerAttrs =
   Dict.insert attr val playerAttrs
+
+extendAbils : String -> (Bool,Int) -> PlayerAbils -> PlayerAbils
+extendAbils abil val abils =
+  Dict.insert abil val abils
+
+extendInfo : String -> String -> PlayerInfo -> PlayerInfo
+extendInfo str1 str2 playerinfo =
+  Dict.insert str1 (if String.length str2 > 0 then (Just str2) else Nothing) playerinfo
 
 -- View
 view : Model -> Html Msg
@@ -165,7 +173,6 @@ mentalAttrs attrs =
 playerInfoView : Model -> Html Msg
 playerInfoView model =
   div []
-    -- input updates state as you type
     [ input (info "Name") []
     , input (info "Player") []
     , input (info "Concept") []
